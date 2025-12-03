@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Insert title here</title>
+<style>
+/* Tùy chỉnh nhỏ để hiển thị giao diện đẹp hơn */
+body {
+	font-family: Arial, sans-serif;
+	padding: 20px;
+}
+
+input {
+	margin-bottom: 5px;
+	padding: 8px;
+	width: 250px;
+	border: 1px solid #ccc;
+	border-radius: 4px;
+}
+
+button {
+	padding: 8px 15px;
+	margin-right: 5px;
+	cursor: pointer;
+	background-color: #525D76;
+	color: white;
+	border: none;
+	border-radius: 4px;
+}
+
+button:hover {
+	background-color: #3b4455;
+}
+
+table {
+	border-collapse: collapse;
+	margin-top: 20px;
+}
+
+th, td {
+	border: 1px solid #ddd;
+	padding: 8px;
+	text-align: left;
+}
+
+th {
+	background-color: #f2f2f2;
+}
+
+/* Styling cho phần tử radio */
+.radio-group label {
+	display: inline-block;
+	cursor: pointer;
+	padding: 8px 15px;
+	border: 1px solid #ccc;
+	border-radius: 4px;
+	margin-right: 10px;
+	background-color: #f8f8f8;
+	transition: all 0.2s;
+	font-size: 14px;
+}
+
+/* Ẩn nút radio mặc định */
+.radio-group input[type="radio"] {
+	display: none;
+}
+
+/* Hiệu ứng khi chọn (Checked state) */
+.radio-group input[type="radio"]:checked+label {
+	background-color: #525D76; /* Màu nền của nút Create/Update */
+	color: white;
+	border-color: #525D76;
+	box-shadow: 0 0 5px rgba(82, 93, 118, 0.5); /* Thêm bóng */
+}
+
+/* Hiệu ứng di chuột (Hover state) */
+.radio-group label:hover {
+	background-color: #e0e0e0;
+}
+</style>
+</head>
+<body>
+	<h1>Quản lý Nhân viên</h1>
+	<div>
+		<input id="id" placeholder="Id?"><br> <input id="name"
+			placeholder="Name?"><br>
+		<div class="radio-group">
+			<input type="radio" id="male" name="gender" checked> <label
+				for="male">Male</label> <input type="radio" id="female"
+				name="gender"> <label for="female">Female</label>
+		</div>
+		<br> <input id="salary" placeholder="Salary?">
+		<hr>
+
+		<button onclick="ctrl.create()">Create</button>
+		<button onclick="ctrl.update()">Update</button>
+		<button onclick="ctrl.delete()">Delete</button>
+		<button onclick="ctrl.reset()">Reset</button>
+	</div>
+
+	<table border="1" style="width: 100%">
+		<thead>
+			<tr>
+				<th>Id</th>
+				<th>Name</th>
+				<th>Gender</th>
+				<th>Salary</th>
+				<th></th>
+			</tr>
+		</thead>
+		<tbody id="list">
+		</tbody>
+	</table>
+
+	<!-- mã js -->
+	<script>
+	//địa chỉ mặc định url
+	const BASE_URL = 'http://localhost:8080/Lab7/employees';
+	var ctrl = {
+			//hiển thị đối tượng json lên form
+			setForm(employee) {
+				document.getElementById("id").value = employee.id;
+				document.getElementById("name").value = employee.name;
+				document.getElementById("salary").value = employee.salary;
+				if(employee.gender) {
+					document.getElementById("male").checked = true;
+				} else{
+					document.getElementById("famale").checked = true;
+				}
+			},
+			
+			//tạo đối tượng json từ form
+			getForm() {
+				return{
+					id: document.getElementById("id").value,
+					name: document.getElementById("name").value,
+					gender: document.getElementById("male").checked,
+					salary: parseFloat(document.getElementById("salary").value)
+				};
+			},
+			
+			//đổ mảng đối tượng json lên table
+			fillToTable(employees) {
+				var rows = [];
+				employees.forEach(e => {
+					var row = 
+						`<tr>
+                        <td>\${e.id}</td>
+                        <td>\${e.name}</td>
+                        <td>\${e.gender ? 'Male' : 'Female'}</td>
+                        <td>\${e.salary}</td>
+                        <td><a href="javascript:ctrl.edit('\${e.id}')">Edit</a></td>
+                    </tr>`;
+                    rows.push(row);
+				});
+				document.getElementById("list").innerHTML = rows.join('');
+			},
+			
+			//gửi yêu cầu GET lấy all nhân viên
+			loadAll() {
+				var url = BASE_URL;
+				fetch(url, {method: "GET"})
+				.then(resp => resp.json())
+				.then(employees => {
+					this.fillToTable(employees);
+				}).catch(error => console.error("Lỗi khi tải dữ liệu: ", error));
+			},
+			
+			//gửi yêu cầu POST tạo nhân viên mới
+			create() {
+				var data = this.getForm();
+				var url = BASE_URL;
+				fetch(url, {method: "POST",
+					headers: {"Content-Type": "application/json"},
+					body: JSON.stringify(data)
+					})
+					.then(resp => {
+						if(!resp.ok) throw new Error('Thêm thất bại, mã lỗi: ' +resp.status);
+						return resp.json();
+					})
+					.then(json => {
+						console.log("Thêm thành công: ",json);
+					}).catch(error => console.error("Lỗi khi thêm:",error));
+				this.loadAll();
+				this.reset();
+			},
+			
+			//gửi yêu cầu PUT cập nhật nhân viên
+			update() {
+				var data = this.getForm();
+				var url = `${BASE_URL}/\${data.id}`;
+				fetch(url, {method: "PUT",
+					headers: {"Content-Type": "application/json"},
+					body: JSON.stringify(data)
+					})
+					.then(resp => {
+						if(!resp.ok) throw new Error('Cập nhật thất bại, mã lỗi: ' +resp.status);
+						return resp.json();
+					})
+					.then(json => {
+						console.log("Cập nhật thành công:",json);
+					}).catch(error => console.error("Lỗi khi cập nhật:",error));
+				this.loadAll();
+			},
+			
+			//gửi yêu cầu DELETE xóa nhân viên
+			delete(){
+				var id = document.getElementById("id").value;
+				var url = `${BASE_URL}/\${id}`;
+				fetch(url, {method: "DELETE"})
+				.then(resp => {
+					if(!resp.ok) throw new Error('Xóa thất bại, mã lỗi: ' +resp.status);
+						return resp.json();
+				})
+				.then(json => {
+					console.log("Xóa thành công:",json);
+				}).catch(error => console.error("Lỗi khi xóa:",error));
+			this.loadAll();
+			this.reset();		
+			},
+			
+			//xóa trắng form
+			reset() {
+				var employee = {id:"",name:"",salary:0,gender:true};
+				this.setForm(employee);
+			},
+			
+			//gửi yêu cầu GET hiện thiện lên form
+			edit(id) {
+				var url = `${BASE_URL}/\${id}`;
+				fetch(url, {method: "GET"})
+				.then(employee => {
+					this.setForm(employee);
+				}).catch(error => console.error("Lỗi khi chỉnh sửa:",error));
+			}
+	};
+	ctrl.loadAll();
+	</script>
+</body>
+</html>
