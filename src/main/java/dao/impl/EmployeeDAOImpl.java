@@ -16,7 +16,7 @@ public class EmployeeDAOImpl implements EmployeeDAO {
 		// TODO Auto-generated method stub
 		EntityManager em = XJPA.getEntityManager();
 		try {
-			String jpql = "select e from Employees e";
+			String jpql = "select e from Employee e";
 			TypedQuery<Employee> query = em.createQuery(jpql, Employee.class);
 			return query.getResultList();
 		} finally {
